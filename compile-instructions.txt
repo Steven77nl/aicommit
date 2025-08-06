@@ -1,0 +1,35 @@
+# GET LATEST VERSION:
+# https://deb.nodesource.com/
+
+# remove old:
+sudo apt-get remove -y nodejs libnode-dev
+
+# install new:
+cd ~
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# check versions:
+node -v
+npm -v
+
+# global install
+sudo npm install -g vsce
+
+# inside extension project folder
+npm install
+npm run compile
+vsce package
+
+
+# -------------------------------
+# old:
+
+sudo apt install npm
+sudo npm install
+sudo npm install node-fetch@^2
+sudo npm install -D @types/node-fetch
+sudo npm install -g vsce
+
+npm run compile
+vsce package
