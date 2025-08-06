@@ -21,6 +21,7 @@ npm install
 npm run compile
 vsce package
 
+this works
 
 # -------------------------------
 # old:

@@ -1,0 +1,22 @@
+# Ignore source files
+src/
+test/
+*.ts
+*.map
+
+# Ignore build output except compiled JS
+out/**/*.js
+!out/extension.js
+
+# Ignore node modules except needed runtime dependencies
+node_modules/
+!.vscode/
+!.vscode-test/
+
+# Ignore config files
+.vscode/
+.vscode-test/
+.gitignore
+npm-debug.log
+yarn.lock
+package-lock.json
