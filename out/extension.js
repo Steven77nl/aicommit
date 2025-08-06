@@ -169,13 +169,26 @@ async function activate(context) {
     }
     async function insertSummaryToCommitBox(summary) {
         try {
-            // Show Source Control view
+            // First try to use the Git extension API for direct access to the
+            // repository-specific input box. This is more reliable than relying on
+            // the global vscode.scm API which can be undefined if no providers are
+            // registered yet.
+            const gitExtension = vscode.extensions.getExtension('vscode.git')?.exports;
+            const repo = gitExtension?.getAPI(1)?.repositories?.[0];
+            if (repo?.inputBox) {
+                repo.inputBox.value = repo.inputBox.value
+                    ? repo.inputBox.value + '\\n\\n' + summary
+                    : summary;
+                return; // Successfully inserted, no further work needed
+            }
+            // Fallback: ensure the Source Control view is visible and use the global
+            // SCM input box.
             await vscode.commands.executeCommand('workbench.view.scm');
-            // Insert summary into SCM input box
-            const scm = vscode.scm;
-            if (scm.inputBox) {
-                // Append summary to existing commit message if any
-                scm.inputBox.value = scm.inputBox.value ? scm.inputBox.value + '\\n\\n' + summary : summary;
+            const scmInput = vscode.scm.inputBox;
+            if (scmInput) {
+                scmInput.value = scmInput.value
+                    ? scmInput.value + '\\n\\n' + summary
+                    : summary;
             }
             else {
                 vscode.window.showWarningMessage('Could not find Source Control input box to insert summary.');
@@ -187,6 +200,7 @@ async function activate(context) {
         }
     }
     async function generateSummary() {
+        vscode.window.showInformationMessage('AI Commit Summary command triggered');
         const output = outputChannel;
         output.show(true);
         output.appendLine('Starting AI commit summary generation...');

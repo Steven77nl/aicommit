@@ -9,7 +9,12 @@ out/**/*.js
 !out/extension.js
 
 # Ignore node modules except needed runtime dependencies
-node_modules/
+# Exclude all of node_modules **except** runtime deps needed by node-fetch
+node_modules/**
+!node_modules/node-fetch/**
+!node_modules/whatwg-url/**
+!node_modules/webidl-conversions/**
+!node_modules/tr46/**
 !.vscode/
 !.vscode-test/
 
@@ -20,3 +25,4 @@ node_modules/
 npm-debug.log
 yarn.lock
 package-lock.json
+compile-instructions.txt
