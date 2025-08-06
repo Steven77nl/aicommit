@@ -1,0 +1,41 @@
+# Node dependencies
+# Ignore all of node_modules except runtime dependencies required by the extension
+node_modules/**
+!node_modules/node-fetch/**
+!node_modules/whatwg-url/**
+!node_modules/webidl-conversions/**
+!node_modules/tr46/**
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output
+out/
+dist/
+coverage/
+*.tgz
+
+# TypeScript
+*.tsbuildinfo
+
+# VS Code Extension artifacts
+.vscode-test/
+*.vsix
+
+# Environment files
+.env
+.env.*
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# IDE directories
+.idea/
+
+# VS Code workspace settings (optional)
+.vscode/

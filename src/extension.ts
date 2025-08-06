@@ -75,12 +75,15 @@ export async function activate(context: vscode.ExtensionContext) {
         return undefined;
       }
       const api = gitExtension.getAPI(1);
-      const repo = api?.repositories[0];
-      if (!repo) {
+      const repos = api?.repositories ?? [];
+      if (repos.length === 0) {
         vscode.window.showErrorMessage('No Git repository found.');
         return undefined;
       }
-      return repo.rootUri.fsPath;
+      // Prefer the first repository that has staged (index) changes; otherwise fall back to the first repo
+      const repoWithStaged = repos.find((r: any) => (r.state?.indexChanges?.length ?? 0) > 0);
+      const targetRepo = repoWithStaged ?? repos[0];
+      return targetRepo.rootUri.fsPath;
     } catch (error: any) {
       vscode.window.showErrorMessage(`Failed to get Git repository root: ${error.message || error}`);
       return undefined;
