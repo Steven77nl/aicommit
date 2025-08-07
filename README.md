@@ -18,9 +18,9 @@ This extension integrates with the Source Control view in VS Code and provides a
 
    Open your VS Code settings (`File > Preferences > Settings` or `Ctrl+,`) and search for `aicommit`. Set the following configuration values:
 
-   - `aicommit.azureEndpoint`: Your Azure OpenAI endpoint URL, e.g. `https://your-resource.openai.azure.com/`
-   - `aicommit.azureDeployment`: The deployment name of your GPT-4 model in Azure OpenAI.
-   - `aicommit.userPrompt`: (Optional) Instruction prompt that will be prepended to your staged diff before it is sent to Azure OpenAI. Use this to tailor the style, tone, or length of the generated commit message.
+   - `aicommitsummarizer.azureEndpoint`: Your Azure OpenAI endpoint URL, e.g. `https://your-resource.openai.azure.com/`
+   - `aicommitsummarizer.azureDeployment`: The deployment name of your GPT-4 model in Azure OpenAI.
+   - `aicommitsummarizer.userPrompt`: (Optional) Instruction prompt that will be prepended to your staged diff before it is sent to Azure OpenAI. Use this to tailor the style, tone, or length of the generated commit message.
 
 2. **Set Your Azure OpenAI API Key**
 

@@ -34,7 +34,7 @@ export async function activate(context: vscode.ExtensionContext) {
     });
     if (key) {
       try {
-        await setSecret('aicommit.azureKey', key);
+        await setSecret('aicommitsummarizer.azureKey', key);
         vscode.window.showInformationMessage('Azure OpenAI API key saved successfully.');
       } catch (error) {
         // setSecret already shows error message and throws, so no need to duplicate here
@@ -44,7 +44,7 @@ export async function activate(context: vscode.ExtensionContext) {
   }
 
   async function getApiKey(): Promise<string | undefined> {
-    let key = await getSecret('aicommit.azureKey');
+    let key = await getSecret('aicommitsummarizer.azureKey');
     if (!key) {
       key = await promptForApiKey();
     }
@@ -58,7 +58,7 @@ export async function activate(context: vscode.ExtensionContext) {
       const deployment = config.get<string>('azureDeployment');
       const prompt = config.get<string>('userPrompt');
       if (!endpoint || !deployment) {
-        vscode.window.showErrorMessage('Please configure aicommit.azureEndpoint and aicommit.azureDeployment in settings.');
+        vscode.window.showErrorMessage('Please configure aicommitsummarizer.azureEndpoint and aicommitsummarizer.azureDeployment in settings.');
         return { endpoint: undefined, deployment: undefined, prompt: undefined };
       }
       return { endpoint, deployment, prompt };
@@ -226,7 +226,7 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   }
 
-  const disposable = vscode.commands.registerCommand('aicommit.generateSummary', generateSummary);
+  const disposable = vscode.commands.registerCommand('aicommitsummarizer.generateSummary', generateSummary);
   context.subscriptions.push(disposable);
 }
 

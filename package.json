@@ -1,8 +1,8 @@
 {
-  "name": "aicommit",
+  "name": "aicommitsummarizer",
   "displayName": "AI Commit Summarizer",
   "description": "VS Code extension to summarize staged git changes using Azure OpenAI GPT-4",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "icon": "media/marketplace-icon.png",
   "publisher": "Steven77nl",
   "repository": {
@@ -17,20 +17,20 @@
     "AI"
   ],
   "activationEvents": [
-    "onCommand:aicommit.generateSummary"
+    "onCommand:aicommitsummarizer.generateSummary"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "aicommit.generateSummary",
+        "command": "aicommitsummarizer.generateSummary",
         "title": "AI"
       }
     ],
     "menus": {
       "scm/title": [
         {
-          "command": "aicommit.generateSummary",
+          "command": "aicommitsummarizer.generateSummary",
           "when": "scmProvider == git",
           "group": "navigation"
         }
@@ -39,8 +39,8 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "myExtension",
-          "title": "AI Commit",
+          "id": "aicommitsummarizerExtension",
+          "title": "AI Commit Summarizer",
           "icon": "media/my-icon-dark.svg",
           "iconDark": "media/my-icon-light.svg"
         }
@@ -50,15 +50,15 @@
       "type": "object",
       "title": "AI Commit Summarizer Configuration",
       "properties": {
-        "aicommit.azureEndpoint": {
+        "aicommitsummarizer.azureEndpoint": {
           "type": "string",
           "description": "Azure OpenAI endpoint URL (e.g. https://your-resource.openai.azure.com/)"
         },
-        "aicommit.azureDeployment": {
+        "aicommitsummarizer.azureDeployment": {
           "type": "string",
           "description": "Azure OpenAI deployment name (e.g. gpt-41-nano)"
         },
-        "aicommit.userPrompt": {
+        "aicommitsummarizer.userPrompt": {
           "type": "string",
           "description": "Instruction prompt for the AI",
           "default": "Summarize these staged changes for a concise commit message. Keep the message short, max 200 characters"
