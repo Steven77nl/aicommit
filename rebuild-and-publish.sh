@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Script to bump patch version, compile, package, and reinstall the VS Code extension
-# Usage: ./rebuild-and-install.sh
+# Script to bump patch version, compile, package, and publish extension to Marketplace
+# Usage: ./rebuild-and-publish.sh
 
 set -euo pipefail
 
