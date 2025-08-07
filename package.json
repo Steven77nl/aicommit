@@ -2,7 +2,8 @@
   "name": "aicommit",
   "displayName": "AI Commit Summarizer",
   "description": "VS Code extension to summarize staged git changes using Azure OpenAI GPT-4",
-  "version": "0.1.2",
+  "version": "0.1.3",
+  "icon": "media/marketplace-icon.png",
   "publisher": "Steven77nl",
   "repository": {
     "type": "git",
@@ -32,6 +33,15 @@
           "command": "aicommit.generateSummary",
           "when": "scmProvider == git",
           "group": "navigation"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "myExtension",
+          "icon": "media/my-icon-dark.svg",
+          "iconDark": "media/my-icon-light.svg"
         }
       ]
     },
