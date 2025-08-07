@@ -53,7 +53,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   async function getConfig() {
     try {
-      const config = vscode.workspace.getConfiguration('aicommit');
+      const config = vscode.workspace.getConfiguration('aicommitsummarizer');
       const endpoint = config.get<string>('azureEndpoint');
       const deployment = config.get<string>('azureDeployment');
       const prompt = config.get<string>('userPrompt');
