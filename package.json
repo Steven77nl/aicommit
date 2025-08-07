@@ -40,6 +40,7 @@
       "activitybar": [
         {
           "id": "myExtension",
+          "title": "AI Commit",
           "icon": "media/my-icon-dark.svg",
           "iconDark": "media/my-icon-light.svg"
         }
