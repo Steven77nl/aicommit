@@ -17,13 +17,16 @@ npm -v
 sudo npm install -g vsce
 sudo npm install node-fetch
 
-# inside extension project folder
+# inside extension project folder install nodejs modules
 npm install
+
+
+# with each compile (all of the above is a one time action)
 npm run compile
 vsce package
 
 # Install the extension and relaod vscode windows
-code --install-extension ./aicommit-0.0.4.vsix
+code --install-extension ./aicommit-0.1.2.vsix
 
 
 

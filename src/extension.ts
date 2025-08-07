@@ -56,18 +56,19 @@ export async function activate(context: vscode.ExtensionContext) {
       const config = vscode.workspace.getConfiguration('aicommit');
       const endpoint = config.get<string>('azureEndpoint');
       const deployment = config.get<string>('azureDeployment');
+      const prompt = config.get<string>('userPrompt');
       if (!endpoint || !deployment) {
         vscode.window.showErrorMessage('Please configure aicommit.azureEndpoint and aicommit.azureDeployment in settings.');
-        return { endpoint: undefined, deployment: undefined };
+        return { endpoint: undefined, deployment: undefined, prompt: undefined };
       }
-      return { endpoint, deployment };
+      return { endpoint, deployment, prompt };
     } catch (error: any) {
       vscode.window.showErrorMessage(`Failed to retrieve configuration: ${error.message || error}`);
-      return { endpoint: undefined, deployment: undefined };
+      return { endpoint: undefined, deployment: undefined, prompt: undefined };
     }
   }
 
-  async function getGitRoot(): Promise<string | undefined> {
+  async function getGitRepoWithStaged() {
     try {
       const gitExtension = vscode.extensions.getExtension('vscode.git')?.exports;
       if (!gitExtension) {
@@ -80,10 +81,30 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.window.showErrorMessage('No Git repository found.');
         return undefined;
       }
-      // Prefer the first repository that has staged (index) changes; otherwise fall back to the first repo
+      // Find first repository with Staged Changes
       const repoWithStaged = repos.find((r: any) => (r.state?.indexChanges?.length ?? 0) > 0);
-      const targetRepo = repoWithStaged ?? repos[0];
-      return targetRepo.rootUri.fsPath;
+      if (repoWithStaged) {
+        return repoWithStaged
+      }
+      vscode.window.showInformationMessage('No staged changes found.');
+      return undefined;
+
+    } catch (error: any) {
+      vscode.window.showErrorMessage(`Failed to get Git repository root: ${error.message || error}`);
+      return undefined;
+    }
+  }
+
+  async function getGitRoot(): Promise<string | undefined> {
+    try {
+
+      const repoWithStaged = await getGitRepoWithStaged()
+      if (repoWithStaged) {
+        return repoWithStaged.rootUri.fsPath;
+      }
+      vscode.window.showInformationMessage('No staged changes found.');
+      return undefined;
+
     } catch (error: any) {
       vscode.window.showErrorMessage(`Failed to get Git repository root: ${error.message || error}`);
       return undefined;
@@ -147,27 +168,13 @@ export async function activate(context: vscode.ExtensionContext) {
 
   async function insertSummaryToCommitBox(summary: string) {
     try {
-      // First try to use the Git extension API for direct access to the
-      // repository-specific input box. This is more reliable than relying on
-      // the global vscode.scm API which can be undefined if no providers are
-      // registered yet.
-      const gitExtension = vscode.extensions.getExtension('vscode.git')?.exports;
-      const repo = gitExtension?.getAPI(1)?.repositories?.[0];
-      if (repo?.inputBox) {
-        repo.inputBox.value = repo.inputBox.value
-          ? repo.inputBox.value + '\\n\\n' + summary
+      const repoWithStaged = await getGitRepoWithStaged()
+
+      if (repoWithStaged?.inputBox) {
+        repoWithStaged.inputBox.value = repoWithStaged.inputBox.value
+          ? repoWithStaged.inputBox.value + '\\n\\n' + summary
           : summary;
         return; // Successfully inserted, no further work needed
-      }
-
-      // Fallback: ensure the Source Control view is visible and use the global
-      // SCM input box.
-      await vscode.commands.executeCommand('workbench.view.scm');
-      const scmInput = vscode.scm.inputBox;
-      if (scmInput) {
-        scmInput.value = scmInput.value
-          ? scmInput.value + '\\n\\n' + summary
-          : summary;
       } else {
         vscode.window.showWarningMessage('Could not find Source Control input box to insert summary.');
       }
@@ -184,7 +191,7 @@ export async function activate(context: vscode.ExtensionContext) {
     output.appendLine('Starting AI commit summary generation...');
     // The individual functions handle their own errors and notifications now
     try {
-      const { endpoint, deployment } = await getConfig();
+      const { endpoint, deployment, prompt } = await getConfig();
       if (!endpoint || !deployment) {
         return;
       }
@@ -203,12 +210,12 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage('No staged changes found.');
         return;
       }
-      let prompt = `Summarize these staged changes for a concise commit message:\\n\\n${diff}`;
-      if (prompt.length > MAX_DIFF_SIZE) {
-        prompt = prompt.slice(0, MAX_DIFF_SIZE) + '\\n\\n[Truncated]';
+      let userprompt = `${prompt}:\\n\\n${diff}`;
+      if (userprompt.length > MAX_DIFF_SIZE) {
+        userprompt = userprompt.slice(0, MAX_DIFF_SIZE) + '\\n\\n[Truncated]';
       }
       output.appendLine('Calling Azure OpenAI...');
-      const summary = await callAzureOpenAI(endpoint, deployment, apiKey, prompt);
+      const summary = await callAzureOpenAI(endpoint, deployment, apiKey, userprompt);
       output.appendLine('Summary received:');
       output.appendLine(summary);
       await insertSummaryToCommitBox(summary);

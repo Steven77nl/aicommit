@@ -2,7 +2,7 @@
   "name": "aicommit",
   "displayName": "AI Commit Summarizer",
   "description": "VS Code extension to summarize staged git changes using Azure OpenAI GPT-4",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "Steven77nl",
   "repository": {
     "type": "git",
@@ -46,6 +46,11 @@
         "aicommit.azureDeployment": {
           "type": "string",
           "description": "Azure OpenAI deployment name (e.g. gpt-41-nano)"
+        },
+        "aicommit.userPrompt": {
+          "type": "string",
+          "description": "Instruction prompt for the AI",
+          "default": "Summarize these staged changes for a concise commit message. Keep the message short, max 200 characters"
         }
       }
     }
