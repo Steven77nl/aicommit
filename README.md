@@ -14,12 +14,13 @@ This extension integrates with the Source Control view in VS Code and provides a
 
 ## Setup Instructions
 
-1. **Configure Azure OpenAI Endpoint and Deployment**
+1. **Configure Azure OpenAI Settings**
 
    Open your VS Code settings (`File > Preferences > Settings` or `Ctrl+,`) and search for `aicommit`. Set the following configuration values:
 
    - `aicommit.azureEndpoint`: Your Azure OpenAI endpoint URL, e.g. `https://your-resource.openai.azure.com/`
    - `aicommit.azureDeployment`: The deployment name of your GPT-4 model in Azure OpenAI.
+   - `aicommit.userPrompt`: (Optional) Instruction prompt that will be prepended to your staged diff before it is sent to Azure OpenAI. Use this to tailor the style, tone, or length of the generated commit message.
 
 2. **Set Your Azure OpenAI API Key**
 
@@ -29,8 +30,8 @@ This extension integrates with the Source Control view in VS Code and provides a
 
 ## Usage
 
-1. Stage your changes in the Source Control view.
-2. Click the **AI-Summarize Staged Changes** button in the Source Control title menu (the button appears when the git provider is active).
+1. Stage your changes for one of your repositories in the Source Control view.
+2. Click the **AI** button in the Source Control title menu (the button appears when the git provider is active).
 3. The extension will generate a commit message summary using Azure OpenAI and automatically insert it into the commit message input box.
 4. Review and edit the generated commit message as needed, then commit your changes.
 
@@ -39,7 +40,7 @@ This extension integrates with the Source Control view in VS Code and provides a
 - The extension limits the size of the staged diff sent to Azure OpenAI to avoid exceeding token limits.
 - Ensure your Azure OpenAI resource has sufficient quota and permissions to use the GPT-4 deployment.
 - Errors and status messages are shown in the VS Code output channel named "AI Commit" and as notifications.
-- This extension currently supports only the first git repository in your workspace.
+- This extension supports multiple repositories in a project, it will act on the first git repository found with staged changes.
 
 ## License
 
