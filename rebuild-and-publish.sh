@@ -5,6 +5,16 @@
 
 set -euo pipefail
 
+echo "removing previous .vsix file (if any)"
+# find first .vsix file and remove it safely
+VSIX_TO_REMOVE=$(ls *.vsix 2>/dev/null | head -n 1 || true)
+if [ -n "$VSIX_TO_REMOVE" ]; then
+  echo "Removing $VSIX_TO_REMOVE"
+  rm -f -- "$VSIX_TO_REMOVE"
+else
+  echo "No .vsix files found"
+fi
+
 echo "==> Bumping patch version in package.json"
 npm version patch --no-git-tag-version
 
