@@ -1,7 +1,7 @@
 {
   "name": "aicommitsummarizer",
   "displayName": "AI Commit Summarizer",
-  "description": "VS Code extension to summarize staged git changes using the Azure OpenAI GPT-4 or GPT5 models",
+  "description": "VS Code extension to summarize staged git changes using the Azure OpenAI GPT-4 or GPT-5 models",
   "version": "0.2.4",
   "icon": "media/marketplace-icon.png",
   "publisher": "Steven77nl",
@@ -59,7 +59,7 @@
         "aicommitsummarizer.userPrompt": {
           "type": "string",
           "description": "Instruction prompt for the AI",
-          "default": "Summarize these staged changes for a concise commit message. Keep the message short, max 200 characters"
+          "default": "Summarize these staged changes for a concise commit message. Keep the message short, max 200 characters and in a single line of text:"
         },
         "aicommitsummarizer.gptVersion": {
           "type": "string",
