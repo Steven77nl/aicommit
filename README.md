@@ -1,6 +1,6 @@
 # AI Commit Summarizer
 
-AI Commit Summarizer is a Visual Studio Code extension that helps you generate concise commit messages by summarizing your staged git changes using Azure OpenAI GPT-4.
+AI Commit Summarizer is a Visual Studio Code extension that helps you generate concise commit messages by summarizing your staged git changes using Azure OpenAI GPT-4 or GPT-5.
 
 ## Overview
 
@@ -8,7 +8,7 @@ This extension integrates with the Source Control view in VS Code and provides a
 
 ## Prerequisites
 
-- A valid Azure OpenAI resource with GPT-4 deployment.
+- A valid Azure OpenAI resource with GPT-4 or GPT-5 deployment.
 - Visual Studio Code version 1.70.0 or higher.
 - Git installed and a git repository initialized in your workspace.
 
@@ -19,7 +19,8 @@ This extension integrates with the Source Control view in VS Code and provides a
    Open your VS Code settings (`File > Preferences > Settings` or `Ctrl+,`) and search for `aicommit`. Set the following configuration values:
 
    - `aicommitsummarizer.azureEndpoint`: Your Azure OpenAI endpoint URL, e.g. `https://your-resource.openai.azure.com/`
-   - `aicommitsummarizer.azureDeployment`: The deployment name of your GPT-4 model in Azure OpenAI.
+   - `aicommitsummarizer.azureDeployment`: The deployment name of your GPT-4 or GPT-5 model in Azure OpenAI. (The nano models are well capable in most cases.)
+   - `aicommitsummarizer.gptVersion`: Which GPT Version is being used (GPT-4 or GPT-5) as they have different API requirements. Default is GPT-4.
    - `aicommitsummarizer.userPrompt`: (Optional) Instruction prompt that will be prepended to your staged diff before it is sent to Azure OpenAI. Use this to tailor the style, tone, or length of the generated commit message.
 
 2. **Set Your Azure OpenAI API Key**
@@ -38,7 +39,7 @@ This extension integrates with the Source Control view in VS Code and provides a
 ## Notes
 
 - The extension limits the size of the staged diff sent to Azure OpenAI to avoid exceeding token limits.
-- Ensure your Azure OpenAI resource has sufficient quota and permissions to use the GPT-4 deployment.
+- Ensure your Azure OpenAI resource has sufficient quota and permissions to use the GPT-4/5 deployment.
 - Errors and status messages are shown in the VS Code output channel named "AI Commit" and as notifications.
 - This extension supports multiple repositories in a project, it will act on the first git repository found with staged changes.
 
