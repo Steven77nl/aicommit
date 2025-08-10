@@ -57,14 +57,15 @@ export async function activate(context: vscode.ExtensionContext) {
       const endpoint = config.get<string>('azureEndpoint');
       const deployment = config.get<string>('azureDeployment');
       const prompt = config.get<string>('userPrompt');
-      if (!endpoint || !deployment) {
-        vscode.window.showErrorMessage('Please configure aicommitsummarizer.azureEndpoint and aicommitsummarizer.azureDeployment in settings.');
-        return { endpoint: undefined, deployment: undefined, prompt: undefined };
+      const version = config.get<string>('gptVersion');
+      if (!endpoint || !deployment || !prompt || !version) {
+        vscode.window.showErrorMessage('Please configure all aicommitsummarizer. settings.');
+        return { endpoint: undefined, deployment: undefined, prompt: undefined, version: undefined };
       }
-      return { endpoint, deployment, prompt };
+      return { endpoint, deployment, prompt, version };
     } catch (error: any) {
       vscode.window.showErrorMessage(`Failed to retrieve configuration: ${error.message || error}`);
-      return { endpoint: undefined, deployment: undefined, prompt: undefined };
+      return { endpoint: undefined, deployment: undefined, prompt: undefined, version: undefined};
     }
   }
 
@@ -124,22 +125,40 @@ export async function activate(context: vscode.ExtensionContext) {
     });
   }
 
-  async function callAzureOpenAI(endpoint: string, deployment: string, apiKey: string, prompt: string): Promise<string> {
+  async function callAzureOpenAI(endpoint: string, deployment: string, version: string, apiKey: string, prompt: string): Promise<string> {
     try {
-      const url = `${endpoint.replace(/\/+$/, '')}/openai/deployments/${deployment}/chat/completions?api-version=2023-05-15`;
-      const body = {
-        messages: [
-          { role: 'system', content: 'You are a helpful assistant that summarizes git staged changes for commit messages.' },
-          { role: 'user', content: prompt }
-        ],
-        max_tokens: 300,
-        temperature: 0.3,
-        top_p: 1,
-        frequency_penalty: 0,
-        presence_penalty: 0,
-        n: 1,
-        stop: null
-      };
+
+      let url = ''
+      let body = {}
+
+      if (version == "GPT4") {
+        url = `${endpoint.replace(/\/+$/, '')}/openai/deployments/${deployment}/chat/completions?api-version=2023-05-15`;
+        body = {
+          messages: [
+            { role: 'system', content: 'You are a helpful assistant that summarizes git staged changes for commit messages.' },
+            { role: 'user', content: prompt }
+          ],
+          max_tokens: 300,
+          temperature: 0.3,
+          top_p: 1,
+          frequency_penalty: 0,
+          presence_penalty: 0,
+          n: 1,
+          stop: null
+        };
+      }
+
+      if (version == "GPT5") {
+        url = `${endpoint.replace(/\/+$/, '')}/openai/deployments/${deployment}/chat/completions?api-version=2025-04-01-preview`;
+        body = {
+          messages: [
+            { role: 'system', content: 'You are a helpful assistant that summarizes git staged changes for commit messages.' },
+            { role: 'user', content: prompt }
+          ],
+          max_completion_tokens: 1000,
+        };
+      }
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -191,7 +210,7 @@ export async function activate(context: vscode.ExtensionContext) {
     output.appendLine('Starting AI commit summary generation...');
     // The individual functions handle their own errors and notifications now
     try {
-      const { endpoint, deployment, prompt } = await getConfig();
+      const { endpoint, deployment, prompt, version } = await getConfig();
       if (!endpoint || !deployment) {
         return;
       }
@@ -215,7 +234,7 @@ export async function activate(context: vscode.ExtensionContext) {
         userprompt = userprompt.slice(0, MAX_DIFF_SIZE) + '\\n\\n[Truncated]';
       }
       output.appendLine('Calling Azure OpenAI...');
-      const summary = await callAzureOpenAI(endpoint, deployment, apiKey, userprompt);
+      const summary = await callAzureOpenAI(endpoint, deployment, version, apiKey, userprompt);
       output.appendLine('Summary received:');
       output.appendLine(summary);
       await insertSummaryToCommitBox(summary);
