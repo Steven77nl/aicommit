@@ -131,7 +131,20 @@ export async function activate(context: vscode.ExtensionContext) {
       let url = ''
       let body = {}
 
-      if (version == "GPT4") {
+      if (version == "GPT5") {
+        url = `${endpoint.replace(/\/+$/, '')}/openai/deployments/${deployment}/chat/completions?api-version=2025-04-01-preview`;
+        body = {
+          messages: [
+            { role: 'system', content: 'You are a helpful assistant that summarizes git staged changes for commit messages.' },
+            { role: 'user', content: prompt }
+          ],
+          max_completion_tokens: 500,
+          reasoning_effort: 'low',
+          frequency_penalty: 0,
+          presence_penalty: 0,
+          n: 1
+        };
+      } else { // defaults to "GPT4"
         url = `${endpoint.replace(/\/+$/, '')}/openai/deployments/${deployment}/chat/completions?api-version=2023-05-15`;
         body = {
           messages: [
@@ -143,42 +156,40 @@ export async function activate(context: vscode.ExtensionContext) {
           top_p: 1,
           frequency_penalty: 0,
           presence_penalty: 0,
-          n: 1,
-          stop: null
+          n: 1
         };
       }
 
-      if (version == "GPT5") {
-        url = `${endpoint.replace(/\/+$/, '')}/openai/deployments/${deployment}/chat/completions?api-version=2025-04-01-preview`;
-        body = {
-          messages: [
-            { role: 'system', content: 'You are a helpful assistant that summarizes git staged changes for commit messages.' },
-            { role: 'user', content: prompt }
-          ],
-          max_completion_tokens: 1000,
-        };
+      let retry = 1
+      let summary = ''
+      while (retry >= 0) {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'api-key': apiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        });
+        if (!response.ok) {
+          const errText = await response.text();
+          vscode.window.showErrorMessage(`Azure OpenAI API error: ${response.status} ${response.statusText} - ${errText}`);
+          throw new Error(`Azure OpenAI API error: ${response.status} ${response.statusText} - ${errText}`);
+        }
+        const data: any = await response.json();
+        summary = data.choices?.[0]?.message?.content;
+        if (summary) {
+          break
+        }
+        retry -= 1
       }
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'api-key': apiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      });
-      if (!response.ok) {
-        const errText = await response.text();
-        vscode.window.showErrorMessage(`Azure OpenAI API error: ${response.status} ${response.statusText} - ${errText}`);
-        throw new Error(`Azure OpenAI API error: ${response.status} ${response.statusText} - ${errText}`);
-      }
-      const data: any = await response.json();
-      const summary = data.choices?.[0]?.message?.content;
       if (!summary) {
         vscode.window.showErrorMessage('No summary returned from Azure OpenAI');
         throw new Error('No summary returned from Azure OpenAI');
       }
       return summary.trim();
+      
     } catch (error: any) {
       vscode.window.showErrorMessage(`Failed to call Azure OpenAI: ${error.message || error}`);
       throw error;
@@ -190,9 +201,7 @@ export async function activate(context: vscode.ExtensionContext) {
       const repoWithStaged = await getGitRepoWithStaged()
 
       if (repoWithStaged?.inputBox) {
-        repoWithStaged.inputBox.value = repoWithStaged.inputBox.value
-          ? repoWithStaged.inputBox.value + '\\n\\n' + summary
-          : summary;
+        repoWithStaged.inputBox.value = summary;
         return; // Successfully inserted, no further work needed
       } else {
         vscode.window.showWarningMessage('Could not find Source Control input box to insert summary.');
