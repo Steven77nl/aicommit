@@ -15,9 +15,6 @@ else
   echo "No .vsix files found"
 fi
 
-echo "==> Bumping patch version in package.json"
-npm version patch --no-git-tag-version
-
 VERSION=$(node -p "require('./package.json').version")
 echo "New extension version: $VERSION"
 
