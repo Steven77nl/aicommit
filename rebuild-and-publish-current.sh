@@ -16,7 +16,7 @@ else
 fi
 
 VERSION=$(node -p "require('./package.json').version")
-echo "New extension version: $VERSION"
+echo "Extension version: $VERSION"
 
 echo "==> Compiling TypeScript sources"
 npm run compile
