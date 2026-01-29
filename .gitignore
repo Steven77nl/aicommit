@@ -5,6 +5,7 @@ node_modules/**
 !node_modules/whatwg-url/**
 !node_modules/webidl-conversions/**
 !node_modules/tr46/**
+package-lock.json
 
 # Logs
 logs/

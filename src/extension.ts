@@ -26,6 +26,36 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   }
 
+  async function resetSecret(key: string): Promise<void> {
+    try {
+      await context.secrets.delete(key);
+      vscode.window.showInformationMessage(`Secret cleared for key "${key}".`);
+    } catch (error: any) {
+      vscode.window.showErrorMessage(
+        `Failed to clear secret for key "${key}": ${error.message || error}`
+      );
+      throw error;
+    }
+  }
+
+  async function resetApiKey(): Promise<void> {
+    const confirm = await vscode.window.showWarningMessage(
+      'Are you sure you want to reset the Azure OpenAI API key?',
+      { modal: true },
+      'Yes',
+      'No'
+    );
+
+    if (confirm !== 'Yes') {
+      return;
+    }
+
+    await resetSecret('aicommitsummarizer.azureKey');
+    vscode.window.showInformationMessage(
+      'Azure OpenAI API key has been reset. You will be prompted for a new key next time it is needed.'
+    );
+  }
+
   async function promptForApiKey(): Promise<string | undefined> {
     const key = await vscode.window.showInputBox({
       prompt: 'Enter your Azure OpenAI API Key',
@@ -189,7 +219,7 @@ export async function activate(context: vscode.ExtensionContext) {
         throw new Error('No summary returned from Azure OpenAI');
       }
       return summary.trim();
-      
+
     } catch (error: any) {
       vscode.window.showErrorMessage(`Failed to call Azure OpenAI: ${error.message || error}`);
       throw error;
@@ -254,8 +284,17 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   }
 
-  const disposable = vscode.commands.registerCommand('aicommitsummarizer.generateSummary', generateSummary);
-  context.subscriptions.push(disposable);
+  const disposable = vscode.commands.registerCommand(
+    'aicommitsummarizer.generateSummary',
+    generateSummary
+  );
+
+  const resetDisposable = vscode.commands.registerCommand(
+    'aicommitsummarizer.resetApiKey',
+    resetApiKey
+  );
+
+  context.subscriptions.push(disposable, resetDisposable);
 }
 
 export function deactivate() {}
