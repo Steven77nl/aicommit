@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented here.
 
+## [0.2.9] - 2026-02-06
+### Fixed
+- Shorten the button name to 'AIC'
+
 ## [0.2.8] - 2026-01-29
 ### Added
 - Added an Command Palette command to reset the API key.

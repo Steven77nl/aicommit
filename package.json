@@ -2,7 +2,7 @@
   "name": "aicommitsummarizer",
   "displayName": "AI Commit Summarizer",
   "description": "VS Code extension to summarize staged git changes using the Azure OpenAI GPT-4 or GPT-5 models",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "icon": "media/marketplace-icon.png",
   "publisher": "Steven77nl",
   "repository": {
@@ -22,7 +22,7 @@
     "commands": [
       {
         "command": "aicommitsummarizer.generateSummary",
-        "title": "AI Commit: Generate Summary"
+        "title": "AIC"
       },
       {
         "command": "aicommitsummarizer.resetApiKey",
