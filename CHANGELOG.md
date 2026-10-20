@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented here.
 
-## [Unreleased]
+## [0.3.2] - 2026-10-20
 ### Fixed
 - Omit presence and frequency penalties from all API requests to avoid LiteLLM unsupported-parameter errors, including reasoning requests made with Azure settings.
 
