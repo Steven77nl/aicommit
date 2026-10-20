@@ -2,7 +2,7 @@
   "name": "aicommitsummarizer",
   "displayName": "AI Commit Summarizer",
   "description": "Summarize staged git changes using Azure OpenAI or OpenAI-compatible APIs such as LiteLLM, with GPT-4, GPT-5, and GPT-6 support",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "icon": "media/marketplace-icon.png",
   "publisher": "Steven77nl",
   "repository": {
