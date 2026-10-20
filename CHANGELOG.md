@@ -1,6 +1,20 @@
 # Changelog
 All notable changes to this project will be documented here.
 
+## [Unreleased]
+### Fixed
+- Omit presence and frequency penalties from all API requests to avoid LiteLLM unsupported-parameter errors, including reasoning requests made with Azure settings.
+
+### Added
+- OpenAI-compatible Chat Completions support for LiteLLM with configurable endpoint and model aliases.
+- GPT-6 family support, including version-specific model names exposed by the proxy.
+- Unified endpoint, model/deployment name, and secure API-key storage for both providers, with automatic migration from legacy fields.
+- Automated request and response tests with a local mock API.
+
+### Changed
+- The API-key reset command now resets the shared key without reimporting legacy keys on reload.
+- Legacy endpoint/model settings are migrated at their original configuration scope without overwriting explicitly configured unified values. Azure remains the default provider.
+
 ## [0.2.9] - 2026-02-06
 ### Fixed
 - Shorten the button name to 'AIC'

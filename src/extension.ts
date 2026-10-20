@@ -1,11 +1,27 @@
 import * as vscode from 'vscode';
 import { exec } from 'child_process';
-import fetch from 'node-fetch';
+import { AiConfig, ApiProvider, GptVersion, providerName, requestSummary } from './aiClient';
+import { API_KEY_SECRET, API_KEY_MIGRATION, migrateSettings, migrateApiKey } from './configMigration';
 
 const MAX_DIFF_SIZE = 12000; // max characters for prompt
 
 export async function activate(context: vscode.ExtensionContext) {
   const outputChannel = vscode.window.createOutputChannel('AI Commit');
+
+  try {
+    const config = vscode.workspace.getConfiguration('aicommitsummarizer');
+    await migrateSettings(config, 'globalValue', (key, value) => config.update(key, value, vscode.ConfigurationTarget.Global));
+    if (vscode.workspace.workspaceFolders?.length) {
+      await migrateSettings(config, 'workspaceValue', (key, value) => config.update(key, value, vscode.ConfigurationTarget.Workspace));
+      for (const folder of vscode.workspace.workspaceFolders) {
+        const folderConfig = vscode.workspace.getConfiguration('aicommitsummarizer', folder.uri);
+        await migrateSettings(folderConfig, 'workspaceFolderValue', (key, value) => folderConfig.update(key, value, vscode.ConfigurationTarget.WorkspaceFolder));
+      }
+    }
+    await migrateApiKey(context.secrets, context.globalState, config.get<ApiProvider>('provider', 'azure'));
+  } catch (error: any) {
+    vscode.window.showErrorMessage(`AI Commit settings migration failed: ${error.message || error}. Legacy values have been retained where migration could not finish.`);
+  }
 
   async function getSecret(key: string): Promise<string | undefined> {
     try {
@@ -40,7 +56,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   async function resetApiKey(): Promise<void> {
     const confirm = await vscode.window.showWarningMessage(
-      'Are you sure you want to reset the Azure OpenAI API key?',
+      'Are you sure you want to reset the shared AI Commit API key for both providers?',
       { modal: true },
       'Yes',
       'No'
@@ -50,22 +66,24 @@ export async function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    await resetSecret('aicommitsummarizer.azureKey');
+    await context.globalState.update(API_KEY_MIGRATION, true);
+    await resetSecret(API_KEY_SECRET);
     vscode.window.showInformationMessage(
-      'Azure OpenAI API key has been reset. You will be prompted for a new key next time it is needed.'
+      'The shared API key has been reset. You will be prompted for a new key next time it is needed.'
     );
   }
 
-  async function promptForApiKey(): Promise<string | undefined> {
+  async function promptForApiKey(provider: ApiProvider): Promise<string | undefined> {
+    const name = providerName(provider);
     const key = await vscode.window.showInputBox({
-      prompt: 'Enter your Azure OpenAI API Key',
+      prompt: `Enter your ${name} API Key`,
       ignoreFocusOut: true,
       password: true,
     });
     if (key) {
       try {
-        await setSecret('aicommitsummarizer.azureKey', key);
-        vscode.window.showInformationMessage('Azure OpenAI API key saved successfully.');
+        await setSecret(API_KEY_SECRET, key);
+        vscode.window.showInformationMessage(`${name} API key saved successfully.`);
       } catch (error) {
         // setSecret already shows error message and throws, so no need to duplicate here
       }
@@ -73,29 +91,38 @@ export async function activate(context: vscode.ExtensionContext) {
     return key;
   }
 
-  async function getApiKey(): Promise<string | undefined> {
-    let key = await getSecret('aicommitsummarizer.azureKey');
+  async function getApiKey(provider: ApiProvider): Promise<string | undefined> {
+    let key = await getSecret(API_KEY_SECRET);
     if (!key) {
-      key = await promptForApiKey();
+      key = await promptForApiKey(provider);
     }
     return key;
   }
 
-  async function getConfig() {
+  async function getConfig(): Promise<AiConfig | undefined> {
     try {
       const config = vscode.workspace.getConfiguration('aicommitsummarizer');
-      const endpoint = config.get<string>('azureEndpoint');
-      const deployment = config.get<string>('azureDeployment');
-      const prompt = config.get<string>('userPrompt');
-      const version = config.get<string>('gptVersion');
-      if (!endpoint || !deployment || !prompt || !version) {
-        vscode.window.showErrorMessage('Please configure all aicommitsummarizer. settings.');
-        return { endpoint: undefined, deployment: undefined, prompt: undefined, version: undefined };
+      const provider = config.get<ApiProvider>('provider', 'azure');
+      if (provider !== 'azure' && provider !== 'openaiCompatible') {
+        throw new Error('Please select a valid aicommitsummarizer.provider.');
       }
-      return { endpoint, deployment, prompt, version };
+      const endpoint = config.get<string>('endpoint')?.trim();
+      const model = config.get<string>('model')?.trim();
+      const prompt = config.get<string>('userPrompt');
+      const version = config.get<GptVersion>('gptVersion', 'GPT4');
+      if (!endpoint || !model || !prompt?.trim()) {
+        throw new Error('Please configure aicommitsummarizer.endpoint, aicommitsummarizer.model, and aicommitsummarizer.userPrompt.');
+      }
+      if (!['GPT4', 'GPT5', 'GPT6'].includes(version)) {
+        throw new Error('Please select a valid aicommitsummarizer.gptVersion.');
+      }
+      if (provider === 'azure' && version === 'GPT6') {
+        throw new Error('GPT6 requires aicommitsummarizer.provider to be openaiCompatible. Configure your LiteLLM endpoint and model.');
+      }
+      return { provider, endpoint, model, prompt, version };
     } catch (error: any) {
       vscode.window.showErrorMessage(`Failed to retrieve configuration: ${error.message || error}`);
-      return { endpoint: undefined, deployment: undefined, prompt: undefined, version: undefined};
+      return undefined;
     }
   }
 
@@ -155,77 +182,6 @@ export async function activate(context: vscode.ExtensionContext) {
     });
   }
 
-  async function callAzureOpenAI(endpoint: string, deployment: string, version: string, apiKey: string, prompt: string): Promise<string> {
-    try {
-
-      let url = ''
-      let body = {}
-
-      if (version == "GPT5") {
-        url = `${endpoint.replace(/\/+$/, '')}/openai/deployments/${deployment}/chat/completions?api-version=2025-04-01-preview`;
-        body = {
-          messages: [
-            { role: 'system', content: 'You are a helpful assistant that summarizes git staged changes for commit messages.' },
-            { role: 'user', content: prompt }
-          ],
-          max_completion_tokens: 500,
-          reasoning_effort: 'low',
-          frequency_penalty: 0,
-          presence_penalty: 0,
-          n: 1
-        };
-      } else { // defaults to "GPT4"
-        url = `${endpoint.replace(/\/+$/, '')}/openai/deployments/${deployment}/chat/completions?api-version=2023-05-15`;
-        body = {
-          messages: [
-            { role: 'system', content: 'You are a helpful assistant that summarizes git staged changes for commit messages.' },
-            { role: 'user', content: prompt }
-          ],
-          max_tokens: 300,
-          temperature: 0.3,
-          top_p: 1,
-          frequency_penalty: 0,
-          presence_penalty: 0,
-          n: 1
-        };
-      }
-
-      let retry = 1
-      let summary = ''
-      while (retry >= 0) {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'api-key': apiKey,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(body)
-        });
-        if (!response.ok) {
-          const errText = await response.text();
-          vscode.window.showErrorMessage(`Azure OpenAI API error: ${response.status} ${response.statusText} - ${errText}`);
-          throw new Error(`Azure OpenAI API error: ${response.status} ${response.statusText} - ${errText}`);
-        }
-        const data: any = await response.json();
-        summary = data.choices?.[0]?.message?.content;
-        if (summary) {
-          break
-        }
-        retry -= 1
-      }
-
-      if (!summary) {
-        vscode.window.showErrorMessage('No summary returned from Azure OpenAI');
-        throw new Error('No summary returned from Azure OpenAI');
-      }
-      return summary.trim();
-
-    } catch (error: any) {
-      vscode.window.showErrorMessage(`Failed to call Azure OpenAI: ${error.message || error}`);
-      throw error;
-    }
-  }
-
   async function insertSummaryToCommitBox(summary: string) {
     try {
       const repoWithStaged = await getGitRepoWithStaged()
@@ -249,13 +205,13 @@ export async function activate(context: vscode.ExtensionContext) {
     output.appendLine('Starting AI commit summary generation...');
     // The individual functions handle their own errors and notifications now
     try {
-      const { endpoint, deployment, prompt, version } = await getConfig();
-      if (!endpoint || !deployment) {
+      const config = await getConfig();
+      if (!config) {
         return;
       }
-      const apiKey = await getApiKey();
+      const apiKey = await getApiKey(config.provider);
       if (!apiKey) {
-        vscode.window.showErrorMessage('Azure OpenAI API key is required.');
+        vscode.window.showErrorMessage(`${providerName(config.provider)} API key is required.`);
         return;
       }
       const repoPath = await getGitRoot();
@@ -268,12 +224,12 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage('No staged changes found.');
         return;
       }
-      let userprompt = `${prompt}:\\n\\n${diff}`;
+      let userprompt = `${config.prompt}:\\n\\n${diff}`;
       if (userprompt.length > MAX_DIFF_SIZE) {
         userprompt = userprompt.slice(0, MAX_DIFF_SIZE) + '\\n\\n[Truncated]';
       }
-      output.appendLine('Calling Azure OpenAI...');
-      const summary = await callAzureOpenAI(endpoint, deployment, version, apiKey, userprompt);
+      output.appendLine(`Calling ${providerName(config.provider)} (${config.model})...`);
+      const summary = await requestSummary(config, apiKey, userprompt);
       output.appendLine('Summary received:');
       output.appendLine(summary);
       await insertSummaryToCommitBox(summary);

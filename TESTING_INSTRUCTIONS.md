@@ -1,90 +1,40 @@
-# AI Commit Summarizer VS Code Extension - End-to-End Testing Instructions
-
-This document provides step-by-step instructions to perform end-to-end testing of the AI Commit Summarizer VS Code extension on a sample git repository.
+# AI Commit Summarizer: End-to-End Testing
 
 ## Prerequisites
 
-- VS Code with the AI Commit Summarizer extension installed (from this source).
-- Azure OpenAI GPT-4 API key and configuration:
-  - `aicommit.azureEndpoint` (e.g. https://your-resource.openai.azure.com/)
-  - `aicommit.azureDeployment` (deployment name for GPT-4)
-- Git installed and accessible in your system PATH.
+- VS Code with the rebuilt extension installed and the window reloaded.
+- A Git repository with staged changes.
+- A LiteLLM/OpenAI-compatible proxy or an Azure OpenAI resource with a working model and API key.
+- Follow [the setup guide](README.md) for configuration.
 
-## Test Setup
+## Unified configuration
 
-1. **Create a sample git repository:**
+1. In AI Commit Summarizer settings, select Provider, set Endpoint to the API base URL, and set Model to the Azure deployment name or LiteLLM model alias.
+2. Select the appropriate Gpt Version. For GPT-6 Luna, choose openaiCompatible, GPT6, and model gpt-6-luna.
+3. Click **AIC** in Source Control. Enter the selected service's API key when prompted.
+4. Verify the AI Commit output identifies the provider and model, and a summary appears in the commit input box.
+5. For LiteLLM, inspect proxy logs: the request uses the configured base path plus **/chat/completions**, Bearer authentication, and the exact model alias. It must not contain Azure deployment paths, an Azure API-version query, or presence/frequency penalties.
+6. For Azure GPT4/GPT5, verify deployment-based routing and Azure API-key authentication.
 
-```bash
-mkdir ~/aicommit-test-repo
-cd ~/aicommit-test-repo
-git init
-echo "Initial content" > file.txt
-git add file.txt
-git commit -m "Initial commit"
-```
+## Migration
 
-2. **Make some changes and stage them:**
+Use a test profile or back up your settings before these checks.
 
-```bash
-echo "Added line 1" >> file.txt
-echo "Added line 2" >> file.txt
-git add file.txt
-```
+1. With unified Endpoint and Model unset, configure legacy Azure endpoint/deployment values at User scope. Select Azure and reload the extension. Confirm shared Endpoint/Model are populated at User scope and copied legacy fields are removed.
+2. Repeat with legacy compatible endpoint/model values and the compatible provider at Workspace scope. Confirm Workspace values are migrated without modifying User values.
+3. In a multi-root workspace, repeat with folder-specific provider overrides and legacy settings. Confirm folder settings remain at their original scope.
+4. Set shared Endpoint or Model explicitly before migration, including an empty value. Confirm it is not overwritten and the conflicting legacy value remains available for recovery.
+5. With both providers' legacy values present, verify that only the selected provider's values are copied at each scope.
+6. On the first activation with this migration, confirm the selected provider's old stored key works without prompting, unless a shared key already exists. Existing shared keys must be preserved.
+7. Run **AI Commit: Reset API Key**, then reload. Confirm the next generation prompts for a new key rather than silently restoring a legacy key.
 
-3. **Open VS Code in the sample repo:**
+## Provider switching and errors
 
-```bash
-code ~/aicommit-test-repo
-```
+- Switching Provider alone must not change Endpoint, Model, or the shared key. Set the new service's Endpoint/Model and reset the shared key when changing credentials.
+- Clear Endpoint or Model: generation should report missing unified settings.
+- Reset the shared key and cancel the next key prompt: generation should report that a key is required.
+- Use an invalid key: the error should identify the selected provider.
+- Select Azure with GPT6: generation should report that GPT6 requires the compatible provider without making an Azure request.
+- With no staged changes, generation should not insert a summary.
 
-4. **Configure the extension:**
-
-- Open VS Code settings (`Ctrl+,` or `Cmd+,`).
-- Search for `aicommit.azureEndpoint` and set your Azure OpenAI endpoint URL.
-- Search for `aicommit.azureDeployment` and set your GPT-4 deployment name.
-- The extension will prompt for your Azure OpenAI API key on first use; enter it when prompted.
-
-## Testing Steps
-
-### 1. Verify Button Appearance
-
-- Open the Source Control view (`Ctrl+Shift+G` or `Cmd+Shift+G`).
-- Confirm the button labeled "AI-Summarize Staged Changes" appears in the Source Control title bar.
-
-### 2. Generate AI Commit Summary
-
-- Click the "AI-Summarize Staged Changes" button.
-- Observe the Output panel for "AI Commit" channel showing progress logs.
-- Confirm that the staged changes are summarized by Azure OpenAI GPT-4.
-- Confirm the AI-generated summary is inserted into the commit message box.
-
-### 3. Test Error Handling
-
-#### Missing Configuration
-
-- Temporarily remove or clear `aicommit.azureEndpoint` or `aicommit.azureDeployment` in settings.
-- Click the button again.
-- Confirm an error message appears indicating missing configuration.
-
-#### Missing API Key
-
-- Clear the stored API key by running the command palette (`Ctrl+Shift+P` or `Cmd+Shift+P`) and executing:
-  ```
-  Developer: Open Secrets Storage
-  ```
-  Then remove the `aicommit.azureKey` entry.
-- Click the button again.
-- Confirm the extension prompts for the API key.
-- Cancel the prompt to simulate missing API key.
-- Confirm an error message appears indicating the API key is required.
-
-## Notes and Improvements
-
-- Observe any error messages or unexpected behavior.
-- Note if the summary is accurate and concise.
-- Check if the button is responsive and the UI updates correctly.
-- Report any issues or suggestions for improvement.
-
----
-
-These instructions should allow thorough end-to-end testing of the AI Commit Summarizer extension.
+Automated request and migration tests are described in [the test guide](test/README.md). Live service testing is still required to verify model availability and supported reasoning parameters.

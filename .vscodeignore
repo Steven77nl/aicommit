@@ -7,6 +7,8 @@ test/
 # Ignore build output except compiled JS
 out/**/*.js
 !out/extension.js
+!out/aiClient.js
+!out/configMigration.js
 
 # Ignore node modules except needed runtime dependencies
 # Exclude all of node_modules **except** runtime deps needed by node-fetch

@@ -1,8 +1,8 @@
 {
   "name": "aicommitsummarizer",
   "displayName": "AI Commit Summarizer",
-  "description": "VS Code extension to summarize staged git changes using the Azure OpenAI GPT-4 or GPT-5 models",
-  "version": "0.2.9",
+  "description": "Summarize staged git changes using Azure OpenAI or OpenAI-compatible APIs such as LiteLLM, with GPT-4, GPT-5, and GPT-6 support",
+  "version": "0.3.2",
   "icon": "media/marketplace-icon.png",
   "publisher": "Steven77nl",
   "repository": {
@@ -26,7 +26,7 @@
       },
       {
         "command": "aicommitsummarizer.resetApiKey",
-        "title": "AI Commit: Reset Azure API Key"
+        "title": "AI Commit: Reset API Key"
       }
     ],
     "menus": {
@@ -52,12 +52,45 @@
       "type": "object",
       "title": "AI Commit Summarizer Configuration",
       "properties": {
+        "aicommitsummarizer.provider": {
+          "type": "string",
+          "enum": [
+            "azure",
+            "openaiCompatible"
+          ],
+          "enumDescriptions": [
+            "Azure OpenAI deployments",
+            "OpenAI-compatible Chat Completions API, such as LiteLLM"
+          ],
+          "default": "azure",
+          "description": "API provider. Select openaiCompatible for GPT-6 through LiteLLM."
+        },
+        "aicommitsummarizer.endpoint": {
+          "type": "string",
+          "description": "API base URL for the selected provider: your Azure OpenAI resource URL or OpenAI-compatible/LiteLLM base URL. For compatible APIs /chat/completions is appended; include /v1 only if required."
+        },
+        "aicommitsummarizer.model": {
+          "type": "string",
+          "description": "Azure deployment name or exact OpenAI-compatible/LiteLLM model alias, depending on the selected provider."
+        },
+        "aicommitsummarizer.openaiCompatibleEndpoint": {
+          "type": "string",
+          "deprecationMessage": "Migrated to aicommitsummarizer.endpoint. Use the shared endpoint setting.",
+          "description": "OpenAI-compatible API base URL (e.g. http://localhost:4000 or https://your-litellm.example.com/v1). /chat/completions is appended; include /v1 only if your proxy requires it."
+        },
+        "aicommitsummarizer.openaiCompatibleModel": {
+          "type": "string",
+          "deprecationMessage": "Migrated to aicommitsummarizer.model. Use the shared model setting.",
+          "description": "Exact model name or alias configured in LiteLLM, including the desired GPT-6 version. Sent as the model field in the request."
+        },
         "aicommitsummarizer.azureEndpoint": {
           "type": "string",
+          "deprecationMessage": "Migrated to aicommitsummarizer.endpoint. Use the shared endpoint setting.",
           "description": "Azure OpenAI endpoint URL (e.g. https://your-resource.openai.azure.com/)"
         },
         "aicommitsummarizer.azureDeployment": {
           "type": "string",
+          "deprecationMessage": "Migrated to aicommitsummarizer.model. Use the shared model setting.",
           "description": "Azure OpenAI deployment name (e.g. gpt-41-nano or gpt-5-nano)"
         },
         "aicommitsummarizer.userPrompt": {
@@ -67,10 +100,11 @@
         },
         "aicommitsummarizer.gptVersion": {
           "type": "string",
-          "description": "Which GPT Version is being used",
+          "description": "GPT family used to select request parameters. GPT6 requires the openaiCompatible provider; choose the exact version with model.",
           "enum": [
             "GPT4",
-            "GPT5"
+            "GPT5",
+            "GPT6"
           ],
           "default": "GPT4"
         }
@@ -82,7 +116,7 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile",
-    "test": "node ./out/test/runTest.js"
+    "test": "node --test test/*.test.js"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
